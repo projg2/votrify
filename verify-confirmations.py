@@ -38,6 +38,7 @@ def main(argv):
 
     voters = list(read_voters(args.voters, args.domain))
     master_hash = set()
+    results = set()
     voters_found = set()
 
     for path in args.confirmation:
@@ -94,14 +95,21 @@ def main(argv):
         # now finally process JSON
         j = json.loads(sout)
         master_hash.add(j['master_hash'])
+        results.add(tuple(tuple(x) for x in j['results']))
 
     if len(master_hash) != 1:
         return 'Different ballot hashes in confirmations found:\n{}'.format(
                 '\n'.join(master_hash))
+    if len(results) != 1:
+        return 'Different results in confirmations found:\n{}'.format(
+                '\n---\n'.join(str(x) for x in results))
 
-    print('Verified {} out of {} known voters (election is {:.2}% verified)'
-          .format(len(voters_found), len(voters),
-                  100*len(voters_found)/len(voters)))
+    print('Verified {} out of {} known voters.'
+          .format(len(voters_found), len(voters)))
+    print('The {:.2}% verified election results are:'
+          .format(100*len(voters_found)/len(voters)))
+    for x in next(iter(results)):
+        print(' '.join(x))
 
     return 0
 
