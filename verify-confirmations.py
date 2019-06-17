@@ -10,6 +10,15 @@ import subprocess
 import sys
 
 
+class Color:
+    bold = '\033[1m'
+    red = '\033[31m'
+    brown = '\033[33m'
+    yellow = '\033[1;33m'
+    green = '\033[1;32m'
+    reset = '\033[0m'
+
+
 def read_voters(f, domain):
     """
     Read voter list from file.  Append domain whenever full e-mail
@@ -20,6 +29,21 @@ def read_voters(f, domain):
         if '@' not in l:
             l += '@' + domain
         yield l
+
+
+def color_percentage(p):
+    """
+    Add ANSI colors to percentage.
+    """
+    if p < 0.25:
+        c = Color.red
+    elif p < 0.5:
+        c = Color.brown
+    elif p < 0.75:
+        c = Color.yellow
+    else:
+        c = Color.green
+    return '{}{:.2}%{}'.format(c, 100*p, Color.reset)
 
 
 def main(argv):
@@ -104,12 +128,24 @@ def main(argv):
         return 'Different results in confirmations found:\n{}'.format(
                 '\n---\n'.join(str(x) for x in results))
 
-    print('Verified {} out of {} known voters.'
-          .format(len(voters_found), len(voters)))
-    print('The {:.2}% verified election results are:'
-          .format(100*len(voters_found)/len(voters)))
+    print('Verified {}{}{} out of {}{}{} known voters.'
+          .format(Color.bold, len(voters_found), Color.reset,
+                  Color.bold, len(voters), Color.reset))
+    print('The {} verified election results are:'
+          .format(color_percentage(len(voters_found)/len(voters))))
+    i = 0
     for x in next(iter(results)):
-        print(' '.join(x))
+        if i + len(x) <= 7:
+            # made it
+            c = Color.green
+        elif i >= 7:
+            # didn't make it
+            c = Color.brown
+        else:
+            # a problematic tie
+            c = Color.yellow
+        print('{}{}{}'.format(c, ' '.join(x), Color.reset))
+        i += len(x)
 
     return 0
 

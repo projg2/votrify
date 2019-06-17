@@ -60,6 +60,11 @@ Thirdly, you need to have OpenPGP keys of all voters, fetched
 and verified.  Using Gentoo Authority Key is recommended for that
 purpose  [#AUTHKEY]_.
 
+Fourthly, you need ``countify`` script and ``Votify.pm`` from elections
+repository.  If you checked out Votrify repository with submodules,
+the script will find them itself.  Otherwise, you should specify
+a path to them via ``-s``.
+
 When you have all the files needed, use ``make-confirmation.py`` to
 verify your vote and produce OpenPGP-signed confirmation.  You need
 to pass the ballot file as ``-b``, master ballot as ``-m``, your
