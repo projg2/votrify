@@ -50,6 +50,8 @@ def main(argv):
     argp = argparse.ArgumentParser(
         prog=argv[0],
         description='Verify confirmations provided by voters.')
+    argp.add_argument('-C', '--no-color', action='store_true',
+        help='Disable colorful output')
     argp.add_argument('-d', '--domain', default='gentoo.org',
         help='Domain to assume for voters without explicit e-mail address' +
              ' (default: gentoo.org)')
@@ -59,6 +61,14 @@ def main(argv):
     argp.add_argument(dest='confirmation', nargs='+',
         help='Paths to confirmation files')
     args = argp.parse_args(argv[1:])
+
+    if args.no_color:
+        Color.bold = ''
+        Color.red = ''
+        Color.brown = ''
+        Color.yellow = ''
+        Color.green = ''
+        Color.reset = ''
 
     voters = list(read_voters(args.voters, args.domain))
     master_hash = set()
