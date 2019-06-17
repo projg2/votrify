@@ -55,6 +55,9 @@ def main(argv):
     argp.add_argument('-d', '--domain', default='gentoo.org',
         help='Domain to assume for voters without explicit e-mail address' +
              ' (default: gentoo.org)')
+    argp.add_argument('-s', '--seats', type=int, default=7,
+        help='Number of seats to take (for colorful output).  Defaults to' +
+             ' 7 which is correct for Gentoo Council elections')
     argp.add_argument('-v', '--voters', required=True,
         type=argparse.FileType('r'),
         help='File containing eligible voter list')
@@ -145,10 +148,10 @@ def main(argv):
           .format(color_percentage(len(voters_found)/len(voters))))
     i = 0
     for x in next(iter(results)):
-        if i + len(x) <= 7:
+        if i + len(x) <= args.seats:
             # made it
             c = Color.green
-        elif i >= 7:
+        elif i >= args.seats:
             # didn't make it
             c = Color.brown
         else:
