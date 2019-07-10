@@ -52,9 +52,9 @@ to election result mails, and are found in elections repository
 (``ballot-*``), master ballot (``master-*``) and the voters list
 (``voters-*``).
 
-Secondly, you need your vote file and confirmation id.  The former
-is found on dev.gentoo.org as ``.ballot-*-submitted``, the latter you
-should have gotten by mail.
+Secondly, if you voted, then you need your vote file and confirmation
+id.  The former is found on dev.gentoo.org as ``.ballot-*-submitted``,
+the latter you should have gotten by mail.
 
 Thirdly, you need to have OpenPGP keys of all voters, fetched
 and verified.  Using Gentoo Authority Key is recommended for that
@@ -93,6 +93,8 @@ the confirmation is output to stdout::
     =XThI
     -----END PGP SIGNATURE-----
 
+If you haven't voted, you should pass ``-n`` instead of ``-v``
+and ``-c``.
 
 If the verification fails, a short error is output instead::
 

@@ -127,7 +127,7 @@ def main(argv):
     argp.add_argument('-b', '--ballot', required=True,
         type=argparse.FileType('r'),
         help='Election ballot file')
-    argp.add_argument('-c', '--confirmation-id', required=True,
+    argp.add_argument('-c', '--confirmation-id',
         type=confirmation_id,
         help='Your confirmation ID')
     argp.add_argument('-k', '--key-id',
@@ -135,30 +135,42 @@ def main(argv):
     argp.add_argument('-m', '--master', required=True,
         type=argparse.FileType('r'),
         help='Path to master ballot file')
+    argp.add_argument('-n', '--no-vote',
+        action='store_true',
+        help='Indicates that no vote has been cast')
     argp.add_argument('-o', '--output-file', default='-',
         type=argparse.FileType('wb'),
         help='File to write the result into (default: stdout)')
     argp.add_argument('-s', '--scripts',
         default=os.path.join(os.path.dirname(__file__), 'gentoo-elections'),
         help='Directory with votify script')
-    argp.add_argument('-v', '--vote', required=True,
+    argp.add_argument('-v', '--vote',
         type=argparse.FileType('r'),
         help='Path to your vote file')
     args = argp.parse_args(argv[1:])
 
-    # verify your vote
-    vote = list(parse_vote(args.vote))
-    recorded_vote = list(find_master_vote(args.master,
-                                          args.confirmation_id))
+    if args.no_vote:
+        if args.confirmation_id:
+            argp.error('--no-vote and --confirmation-id are mutually exclusive')
+        if args.vote:
+            argp.error('--no-vote and --vote are mutually exclusive')
+    else:
+        if not args.vote or not args.confirmation_id:
+            argp.error('(--vote and --confirmation-id) or --no-vote must be specified')
 
-    if not recorded_vote:
-        return 'No vote found for confirmation_id = {}'.format(
-            args.confirmation_id)
-    if vote != recorded_vote:
-        return 'Vote mismatch found (old = your vote, new = vote recorded):\n{}'.format(
-            '\n'.join(difflib.ndiff(
-                [' '.join(x) for x in recorded_vote],
-                [' '.join(x) for x in vote])))
+        # verify your vote
+        vote = list(parse_vote(args.vote))
+        recorded_vote = list(find_master_vote(args.master,
+                                              args.confirmation_id))
+
+        if not recorded_vote:
+            return 'No vote found for confirmation_id = {}'.format(
+                args.confirmation_id)
+        if vote != recorded_vote:
+            return 'Vote mismatch found (old = your vote, new = vote recorded):\n{}'.format(
+                '\n'.join(difflib.ndiff(
+                    [' '.join(x) for x in recorded_vote],
+                    [' '.join(x) for x in vote])))
 
     # compute election results
     try:
