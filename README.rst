@@ -31,11 +31,11 @@ What does Votrify do?
 Votrify is a suite of tools to communally verify election results.
 Currently, it consists of two scripts:
 
-- ``make-confirmation.py`` that produces a signed confirmation that
+- ``votrify-make-confirmation`` that produces a signed confirmation that
   your vote was included in master ballot along with your election
   results,
 
-- ``verify-confirmations.py`` that verifies signed confirmations
+- ``votrify-verify-confirmations`` that verifies signed confirmations
   from multiple voters in order to determine how many votes were
   verified.
 
@@ -65,13 +65,13 @@ repository.  If you checked out Votrify repository with submodules,
 the script will find them itself.  Otherwise, you should specify
 a path to them via ``-s``.
 
-When you have all the files needed, use ``make-confirmation.py`` to
+When you have all the files needed, use ``votrify-make-confirmation`` to
 verify your vote and produce OpenPGP-signed confirmation.  You need
 to pass the ballot file as ``-b``, master ballot as ``-m``, your
 confirmation id as ``-c`` and your vote as ``-v``.  By default,
 the confirmation is output to stdout::
 
-    $ ./make-confirmation.py -b ballot-council-201806 \
+    $ votrify-make-confirmation -b ballot-council-201806 \
       -m master-council-201806 -c 1234 \
       -v .ballot-council-201806-submitted  
     -----BEGIN PGP SIGNED MESSAGE-----
@@ -98,7 +98,7 @@ and ``-c``.
 
 If the verification fails, a short error is output instead::
 
-    $ ./make-confirmation.py -m master-council-201806 -c 1234 \
+    $ votrify-make-confirmation -m master-council-201806 -c 1234 \
       -v .ballot-council-201806-submitted  
     Vote mismatch found (old = your vote, new = vote recorded):
     <here goes the diff>
@@ -109,10 +109,10 @@ e-mail address in one of the UIDs.
 Save your confirmation into a file and upload it to some common storage.
 Others should upload their confirmations there as well.  Afterwards,
 fetch all confirmations found and verify them using
-``verify-confirmations.py``.  This script takes a list of files
+``votrify-verify-confirmations``.  This script takes a list of files
 as positional arguments and a voters list as ``-v``::
 
-    $ ./verify-confirmations.py -v voters-council-201806 out/*
+    $ votrify-verify-confirmations -v voters-council-201806 out/*
     Verified 1 out of 183 known voters (election is 0.55% verified)
 
 The script will verify that each confirmation is signed by a key that
