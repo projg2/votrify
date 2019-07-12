@@ -18,6 +18,8 @@ die() {
 	exit 1
 }
 
+umask 077
+
 VOTRIFY_ARGS=(
 	-b "/usr/lib/gentoo-elections/completed/${ELECTION}/ballot-${ELECTION}"
 	-m "/usr/lib/gentoo-elections/completed/${ELECTION}/master-${ELECTION}"

@@ -19,6 +19,8 @@ die() {
 	exit 1
 }
 
+umask 077
+
 VOTRIFY_ARGS=(
 	-v "/usr/lib/gentoo-elections/completed/${ELECTION}/voters-${ELECTION}"
 )
