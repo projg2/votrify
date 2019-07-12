@@ -110,6 +110,18 @@ EOF
 		fi
 	done
 
+	cat <<EOF
+
+${GREEN}\
+Please verify whether your vote is correct.  If you have any doubts
+about its correctness, please abort the process via ${WHITE}^c${GREEN}:\
+${RESET}
+
+${WHITE}\
+$(sed -e '/^#/d;/^$/d' "${TMP}/.ballot-${ELECTION}-submitted")\
+${RESET}
+
+EOF
 	while :; do
 		read -e -p "${CYAN}Please enter your confirmation ID: ${RESET}"
 		if [[ -n ${REPLY} ]]; then
