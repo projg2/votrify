@@ -191,6 +191,14 @@ ${WHITE}\
 ${CONF}\
 ${RESET}
 
+EOF
+
+printf '%s' "${YELLOW}"
+gpg --verify <<<"${CONF}" || die "Signature self-verification failed"
+printf '%s' "${RESET}"
+
+cat <<EOF
+
 ${GREEN}\
 Now I would like to upload it to dev.gentoo.org.  If you agree, please
 either type your nickname (preferably the dev name, to avoid collisions)
