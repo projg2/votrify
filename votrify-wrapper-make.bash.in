@@ -68,7 +68,7 @@ while :; do
 done
 
 TMP=$(mktemp -d) || die "Unable to create tempdir"
-trap 'rm -r "${TMP}"' EXIT
+trap 'rm -r -f "${TMP}"' EXIT
 
 if [[ ${VOTED} == y ]]; then
 	cat <<EOF
