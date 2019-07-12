@@ -183,6 +183,7 @@ EOF
 fi
 
 cat <<EOF
+
 ${GREEN}\
 Here is your signed confirmation:\
 ${RESET}
