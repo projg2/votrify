@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# (c) 2019 Michał Górny
+# 2-clause BSD license
+
+# Election to operate on
+ELECTION=@ELECTION@
+
+# Color codes
+RESET=$'\033[0m'
+RED=$'\033[1;31m'
+GREEN=$'\033[1;32m'
+YELLOW=$'\033[1;33m'
+CYAN=$'\033[1;36m'
+WHITE=$'\033[1;37m'
+
+die() {
+	echo "${RED}${*}${RESET}"
+	exit 1
+}
+
+VOTRIFY_ARGS=(
+	-b "/usr/lib/gentoo-elections/completed/${ELECTION}/ballot-${ELECTION}"
+	-m "/usr/lib/gentoo-elections/completed/${ELECTION}/master-${ELECTION}"
+)
+
+cat <<EOF
+${WHITE}= votrify-make-confirmation wrapper for ${ELECTION} =${RESET}
+
+${GREEN}\
+Hi.  I am going to interactively guide you through verifying your vote
+in ${ELECTION} election and uploading a signed confirmation of this.\
+${RESET}
+
+${YELLOW}\
+Privacy note:  I will ask you a few questions.  Your answers will not
+be included in the confirmation, nor sent anywhere.  The confirmation
+will be signed using your OpenPGP key.  Therefore, it will not be
+anonymous.  However, it will expose anything about your participation
+(or lack of) in the election; only the fact that you've chosen to help
+with the verification.  I will print the whole confirmation to you
+and request final confirmation before uploading it.\
+${RESET}
+
+${GREEN}\
+You will need working GnuPG with your signing key (in order to sign
+the confirmation), and SSH client with access to dev.gentoo.org
+(in order to fetch your vote and upload the confirmation).  You will
+also need your confirmation ID, if you have voted in the election.
+
+Should at any point you choose not to proceed, or start over, you can
+safely abort the script with ${WHITE}^c${GREEN}.\
+${RESET}
+
+EOF
+
+while :; do
+	read -e -p "${CYAN}Did you vote in the ${ELECTION} election? [Y/n]${RESET} "
+	case ${REPLY:-y} in
+		[yY])
+			VOTED=y
+			break;;
+		[nN])
+			VOTED=n
+			break;;
+		*)
+			echo "${RED}Please answer y/n.${RESET}";;
+	esac
+done
+
+TMP=$(mktemp -d) || die "Unable to create tempdir"
+trap 'rm -r "${TMP}"' EXIT
+
+if [[ ${VOTED} == y ]]; then
+	cat <<EOF
+
+${GREEN}\
+First, I will verify that your vote has been correctly recorded
+in the master ballot.  Then, we're going to count the votes.  If your
+vote is still present on dev.gentoo.org, I can fetch it for you.\
+${RESET}
+
+EOF
+
+	while :; do
+		read -e -p "${CYAN}Can I try to fetch your vote from dev.g.o? [Y/n]${RESET} "
+		case ${REPLY:-y} in
+			[yY])
+				FETCH_VOTE=y
+				break;;
+			[nN])
+				FETCH_VOTE=n
+				break;;
+			*)
+				echo "${RED}Please answer y/n.${RESET}";;
+		esac
+	done
+
+	if [[ ${FETCH_VOTE} == y ]]; then
+		printf '%s' "${YELLOW}"
+		scp "dev.gentoo.org:.ballot-${ELECTION}-submitted" "${TMP}/"
+		printf '%s' "${RESET}"
+	fi
+
+	while [[ ! -f ${TMP}/.ballot-${ELECTION}-submitted ]]; do
+		read -e -p "${CYAN}Please enter path to your vote file: ${RESET}"
+		if [[ -n ${REPLY} ]]; then
+			printf '%s' "${YELLOW}"
+			cp "${REPLY}" "${TMP}/.ballot-${ELECTION}-submitted"
+			printf '%s' "${RESET}"
+		fi
+	done
+
+	while :; do
+		read -e -p "${CYAN}Please enter your confirmation ID: ${RESET}"
+		if [[ -n ${REPLY} ]]; then
+			if [[ ${REPLY} == [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F] ]]; then
+				VOTRIFY_ARGS+=(
+					-c "${REPLY}"
+					-v "${TMP}/.ballot-${ELECTION}-submitted"
+				)
+				break
+			else
+				echo "${RED}Confirmation ID incorrect (must consist of 4 hex digits).${RESET}"
+			fi
+		fi
+	done
+else
+	VOTRIFY_ARGS+=( -n )
+
+	cat <<EOF
+
+${GREEN}\
+In that case, we're going to only count the votes.  Nevertheless, your
+confirmation will help verify that no extraneous votes were added
+to the master ballot.\
+${RESET}
+EOF
+fi
+
+cat <<EOF
+
+${GREEN}\
+Now we're ready to create the confirmation.  If you'd like to use
+another OpenPGP key than the default to sign it, please type its
+identifier below (in any form acceptable to GnuPG, e.g. fingerprint,
+e-mail, name).  If you'd like to use the default key, just push enter.
+If you'd like to abort, ${WHITE}^c${GREEN}.
+${RESET}
+EOF
+
+read -e -p "${CYAN}Please enter OpenPGP key identifier to use []: ${RESET}"
+if [[ -n ${REPLY} ]]; then
+	VOTRIFY_ARGS+=( -k "${REPLY}" )
+fi
+
+printf '%s' "${YELLOW}"
+CONF=$(votrify-make-confirmation "${VOTRIFY_ARGS[@]}")
+RET=${?}
+printf '%s' "${RESET}"
+
+if [[ ${RET} -ne 0 ]]; then
+	cat <<EOF
+${RED}\
+
+The vote verification failed.  Please verify whether the information you
+typed is correct.  If you believe that your vote may have been
+manipulated, please post to the Gentoo mailing lists.\
+${RESET}
+EOF
+	exit 1
+fi
+
+cat <<EOF
+${GREEN}\
+Here is your signed confirmation:\
+${RESET}
+
+${WHITE}\
+${CONF}\
+${RESET}
+
+${GREEN}\
+Now I would like to upload it to dev.gentoo.org.  If you agree, please
+either type your nickname (preferably the dev name, to avoid collisions)
+or press enter to use the name of the current user.  If you do not wish
+to upload the confirmation, please abort via ${WHITE}^c${GREEN}.\
+${RESET}
+
+EOF
+
+read -e -p "${CYAN}Please enter your nickname [${USER}]: ${RESET}"
+CONF_FILE=${REPLY:-${USER}}.gpg
+printf '%s' "${YELLOW}"
+echo "${CONF}" > "${TMP}/${CONF_FILE}" || die "Unable to write confirmation"
+scp "${TMP}/${CONF_FILE}" "dev.gentoo.org:/space/votrify-${ELECTION//-/}/" ||
+	die "scp upload failed"
+printf '%s' "${RESET}"
+
+
+cat <<EOF
+
+${GREEN}\
+It seems that all went well.  Thanks a lot for helping out!\
+${RESET}
+EOF
