@@ -200,6 +200,8 @@ printf '%s' "${RESET}"
 cat <<EOF
 
 ${GREEN}\
-It seems that all went well.  Thanks a lot for helping out!\
+It seems that all went well.  Thanks a lot for helping out!  If you'd
+like to see the verified results, please run:
+${WHITE}votrify-${ELECTION}-verify\
 ${RESET}
 EOF

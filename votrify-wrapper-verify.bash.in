@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# (c) 2019 Michał Górny
+# 2-clause BSD license
+
+# Election to operate on
+ELECTION=@ELECTION@
+ELECTION=council-201906
+
+# Color codes
+RESET=$'\033[0m'
+RED=$'\033[1;31m'
+GREEN=$'\033[1;32m'
+YELLOW=$'\033[1;33m'
+CYAN=$'\033[1;36m'
+WHITE=$'\033[1;37m'
+
+die() {
+	echo "${RED}${*}${RESET}"
+	exit 1
+}
+
+VOTRIFY_ARGS=(
+	-v "/usr/lib/gentoo-elections/completed/${ELECTION}/voters-${ELECTION}"
+)
+
+# this is used only for colorful output
+case ${ELECTION} in
+	council*)
+		VOTRIFY_ARGS+=( -s 7 );;
+	trustees*)
+		VOTRIFY_ARGS+=( -s 5 );;
+	*)
+		VOTRIFY_ARGS+=( -s 1 );;
+esac
+
+cat <<EOF
+${WHITE}= votrify-verify-confirmations wrapper for ${ELECTION} =${RESET}
+
+${GREEN}\
+Hi.  I am going to try to fetch all confirmations out of dev.gentoo.org
+and use them to verify the results of ${ELECTION} election.\
+
+You will need working GnuPG with *validated* keys of all voters
+(in order to verify the authenticity of confirmations), and SSH client
+with access to dev.gentoo.org (in order to fetch the confirmations).
+For the former, I recommend using Gentoo Authority Keys:
+${WHITE}https://wiki.gentoo.org/wiki/Project:Infrastructure/Authority_Keys\
+${RESET}
+
+EOF
+
+while :; do
+	read -e -p "${CYAN}Would you like to proceed? [Y/n]${RESET} "
+	case ${REPLY:-y} in
+		[yY])
+			break;;
+		[nN])
+			exit 0;;
+		*)
+			echo "${RED}Please answer y/n.${RESET}";;
+	esac
+done
+
+TMP=$(mktemp -d) || die "Unable to create tempdir"
+trap 'rm -r "${TMP}"' EXIT
+
+printf '%s' "${YELLOW}"
+scp "dev.gentoo.org:/space/votrify-${ELECTION//-/}/*.gpg" "${TMP}/" ||
+	die "scp fetching failed"
+printf '%s' "${RESET}"
+
+votrify-verify-confirmations "${VOTRIFY_ARGS[@]}" "${TMP}"/*.gpg
